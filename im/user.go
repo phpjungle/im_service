@@ -36,6 +36,9 @@ func GetSyncKey(appid int64, uid int64) int64 {
 		log.Info("hget error:", err)
 		return 0
 	}
+	if err != nil {
+		log.Info("sync key hget error:", err, appid, uid)
+	}
 	return origin
 }
 
@@ -60,6 +63,7 @@ func SaveSyncKey(appid int64, uid int64, sync_key int64) {
 
 	key := fmt.Sprintf("users_%d_%d", appid, uid)
 
+	log.Info("hset save sync key:", appid, uid, sync_key)
 	_, err := conn.Do("HSET", key, "sync_key", sync_key)
 	if err != nil {
 		log.Warning("hset error:", err)
