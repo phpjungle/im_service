@@ -66,6 +66,7 @@ func (client *PeerClient) HandleSync(sync_key *SyncKey) {
 
 	if last_id == 0 {
 		last_id = GetSyncKey(client.appid, client.uid)
+		log.Infof("get sync key from redis:%d %d %d", client.appid, client.uid)
 	}
 
 	rpc := GetStorageRPCClient(client.uid)

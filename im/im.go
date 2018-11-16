@@ -416,7 +416,7 @@ func SyncKeyService() {
 		case s := <- sync_c:
 			origin := GetSyncKey(s.AppID, s.Uid)
 			if s.LastMsgID > origin {
-				log.Infof("save sync key:%d %d %d", s.AppID, s.Uid, s.LastMsgID)
+				log.Infof("save sync key:%d %d %d origin:%d", s.AppID, s.Uid, s.LastMsgID, origin)
 				SaveSyncKey(s.AppID, s.Uid, s.LastMsgID)
 			}
 			break
