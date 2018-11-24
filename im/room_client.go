@@ -22,6 +22,7 @@ package main
 import log "github.com/golang/glog"
 import "unsafe"
 import "sync/atomic"
+import "github.com/bitly/go-simplejson"
 
 type RoomClient struct {
 	*Connection
@@ -116,6 +117,20 @@ func (client *RoomClient) HandleRoomIM(msg *Message) {
 		log.Infof("room id:%d client:%d, %d is forbidden", room_id, client.appid, client.uid)
 		return
 	}
+
+	//todo 删除如下代码，临时补丁
+	obj, err := simplejson.NewJson([]byte(room_im.content))
+	if err == nil {
+		elem := obj.Get("custom_elem")
+		if elem != nil {
+			action, err := elem.Get("user_action").Int64()
+			if err == nil && action == 1003 {
+				log.Warningf("invalid room message, room id:%d sender:%d content:%s", room_id, room_im.sender, room_im.content)
+				return
+			}
+		}
+	}
+	
 	if (msg.flag & MESSAGE_FLAG_UNPERSISTENT) == 0 {
 		deliver := GetRoomMessageDeliver(room_im.receiver)
 		deliver.SaveRoomMessage(client.appid, room_im)
