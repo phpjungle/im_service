@@ -23,16 +23,25 @@ import log "github.com/golang/glog"
 import "unsafe"
 import "sync/atomic"
 import "github.com/bitly/go-simplejson"
+import "github.com/satori/go.uuid"
 
 type RoomClient struct {
 	*Connection
 	room_id int64
+	session_id string
 }
 
 func (client *RoomClient) Logout() {
 	if client.room_id > 0 {
 		channel := GetRoomChannel(client.room_id)
 		channel.UnsubscribeRoom(client.appid, client.room_id)
+
+		route := app_route.FindOrAddRoute(client.appid)
+		route.RemoveRoomClient(client.room_id, client.Client())
+
+		deliver := GetRoomMessageDeliver(client.room_id)
+		deliver.PublishEvent(client.appid, client.uid, client.room_id,
+			client.session_id, ROOM_EVENT_LEAVE)
 	}
 }
 
@@ -70,6 +79,18 @@ func (client *RoomClient) HandleEnterRoom(room *Room){
 	route.AddRoomClient(client.room_id, client.Client())
 	channel := GetRoomChannel(client.room_id)
 	channel.SubscribeRoom(client.appid, client.room_id)
+
+	u1, err := uuid.NewV4()
+	if err != nil {
+		client.session_id = ""
+		log.Warning("generate uuid err:", err)
+	} else {
+		client.session_id = u1.String()
+	}
+
+	deliver := GetRoomMessageDeliver(client.room_id)
+	deliver.PublishEvent(client.appid, client.uid, client.room_id,
+		client.session_id, ROOM_EVENT_ENTER)
 }
 
 func (client *RoomClient) Client() *Client {
@@ -96,7 +117,10 @@ func (client *RoomClient) HandleLeaveRoom(room *Room) {
 	route.RemoveRoomClient(client.room_id, client.Client())
 	channel := GetRoomChannel(client.room_id)
 	channel.UnsubscribeRoom(client.appid, client.room_id)
+	deliver := GetRoomMessageDeliver(client.room_id)
+	deliver.PublishEvent(client.appid, client.uid, client.room_id, client.session_id, ROOM_EVENT_LEAVE)
 	client.room_id = 0
+	client.session_id = ""
 }
 
 func (client *RoomClient) HandleRoomIM(msg *Message) {

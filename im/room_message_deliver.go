@@ -23,6 +23,8 @@ import "fmt"
 import log "github.com/golang/glog"
 import "github.com/gomodule/redigo/redis"
 
+const ROOM_EVENT_ENTER = 1
+const ROOM_EVENT_LEAVE = 2
 
 type AppRoomMessage struct {
 	appid int64
@@ -30,14 +32,39 @@ type AppRoomMessage struct {
 	*RoomMessage
 }
 
+type RoomEvent struct {
+	appid int64
+	uid int64
+	room_id int64
+	session_id string
+	event int
+	timestamp int
+}
+
+
 type RoomMessageDeliver struct {
 	wt chan *AppRoomMessage
+	event_chan chan *RoomEvent
 }
 
 func NewRoomMessageDeliver() *RoomMessageDeliver {
 	usd := &RoomMessageDeliver{}
 	usd.wt = make(chan *AppRoomMessage, 10000)
+	usd.event_chan = make(chan *RoomEvent, 10000)
 	return usd
+}
+
+func (usd *RoomMessageDeliver) PublishEvent(appid int64, uid int64, room_id int64, session_id string, event int) bool {
+	now := int(time.Now().Unix())
+	e := &RoomEvent{appid, uid, room_id, session_id, event, now}
+
+	select {
+	case usd.event_chan <- e:
+		return true
+	case <- time.After(60*time.Second):
+		log.Infof("publish room event  timed out:%d, %d", appid, uid)
+		return false
+	}
 }
 
 func (usd *RoomMessageDeliver) SaveRoomMessage(appid int64, msg *RoomMessage) bool {
@@ -51,6 +78,31 @@ func (usd *RoomMessageDeliver) SaveRoomMessage(appid int64, msg *RoomMessage) bo
 		return false
 	}
 }
+
+
+func (usd *RoomMessageDeliver) deliverEvents(events []*RoomEvent) {
+	conn := redis_pool.Get()
+	defer conn.Close()
+	
+	begin := time.Now()	
+	conn.Send("MULTI")	
+	for _, event := range(events) {
+		content := fmt.Sprintf("%d\n%d\n%d\n%d\n%d\n%s",
+			event.appid, event.uid, event.room_id, event.event, event.timestamp, event.session_id)
+		queue_name := "room_events"
+		conn.Send("LPUSH", queue_name, content)
+	}
+	_, err := redis.Values(conn.Do("EXEC"))
+	
+	end := time.Now()
+	duration := end.Sub(begin)
+	if err != nil {
+		log.Info("multi lpush error:", err)
+		return
+	}
+	log.Infof("event mmulti lpush:%d time:%s success", len(events), duration)
+}
+
 
 func (usd *RoomMessageDeliver) deliver(messages []*AppRoomMessage) {
 	conn := redis_pool.Get()
@@ -132,6 +184,30 @@ func (usd *RoomMessageDeliver) run() {
 	}
 }
 
+
+func (usd *RoomMessageDeliver) runEvent() {
+	events := make([]*RoomEvent, 0, 100)
+	for {
+		events = events[:0]
+		
+		e := <- usd.event_chan
+		events = append(events, e)
+
+	Loop:
+		for {
+			select {
+			case e = <- usd.event_chan:
+				events = append(events, e)
+			default:
+				break Loop
+			}
+		}
+		usd.deliverEvents(events)
+	}
+}
+
+
 func (usd *RoomMessageDeliver) Start() {
 	go usd.run()
+	go usd.runEvent()
 }
