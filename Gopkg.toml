@@ -46,10 +46,6 @@
   version = "2.0.0"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/googollee/go-engine.io"
-
-[[constraint]]
   name = "github.com/gorilla/mux"
   version = "1.6.2"
 
@@ -72,6 +68,11 @@
 [[constraint]]
   name = "google.golang.org/grpc"
   version = "1.14.0"
+  source = "https://github.com/grpc/grpc-go.git"
+
+[[constraint]]
+  name = "github.com/googollee/go-engine.io"
+  revision = "3c3145340e676971209507021a435520c2700d92"
 
 [prune]
   go-tests = true
