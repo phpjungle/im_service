@@ -65,6 +65,12 @@ type AppMessage struct {
 	msgid    int64
 	device_id int64
 	timestamp int64 //纳秒,测试消息从im->imr->im的时间
+	
+	version_gte int8
+	version_lte int8
+	version     int8
+	platform    int8
+	
 	msg      *Message
 }
 
@@ -80,6 +86,12 @@ func (amsg *AppMessage) ToData() []byte {
 	binary.Write(buffer, binary.BigEndian, amsg.msgid)
 	binary.Write(buffer, binary.BigEndian, amsg.device_id)
 	binary.Write(buffer, binary.BigEndian, amsg.timestamp)
+
+	binary.Write(buffer, binary.BigEndian, amsg.version_gte)
+	binary.Write(buffer, binary.BigEndian, amsg.version_lte)
+	binary.Write(buffer, binary.BigEndian, amsg.version)
+	binary.Write(buffer, binary.BigEndian, amsg.platform)
+	
 	mbuffer := new(bytes.Buffer)
 	WriteMessage(mbuffer, amsg.msg)
 	msg_buf := mbuffer.Bytes()
@@ -92,7 +104,7 @@ func (amsg *AppMessage) ToData() []byte {
 }
 
 func (amsg *AppMessage) FromData(buff []byte) bool {
-	if len(buff) < 42 {
+	if len(buff) < 46 {
 		return false
 	}
 
@@ -101,7 +113,12 @@ func (amsg *AppMessage) FromData(buff []byte) bool {
 	binary.Read(buffer, binary.BigEndian, &amsg.receiver)
 	binary.Read(buffer, binary.BigEndian, &amsg.msgid)
 	binary.Read(buffer, binary.BigEndian, &amsg.device_id)
-	binary.Read(buffer, binary.BigEndian, &amsg.timestamp)	
+	binary.Read(buffer, binary.BigEndian, &amsg.timestamp)
+
+	binary.Read(buffer, binary.BigEndian, &amsg.version_gte)
+	binary.Read(buffer, binary.BigEndian, &amsg.version_lte)
+	binary.Read(buffer, binary.BigEndian, &amsg.version)
+	binary.Read(buffer, binary.BigEndian, &amsg.platform)
 
 	var l int16
 	binary.Read(buffer, binary.BigEndian, &l)

@@ -643,6 +643,14 @@ func SendRoomMessage(w http.ResponseWriter, req *http.Request) {
 		room_ids = append(room_ids, room_id)
 	}
 
+	version_gte, err := obj.Get("version_gte").Int()
+	version_lte, err := obj.Get("version_lte").Int()
+	version, err := obj.Get("version").Int()
+
+	platform, _ := obj.Get("platform").Int()
+
+	
+		
 	log.Infof("appid:%d uid:%d rooms:%v persistent:%d content:%s",
 		appid, uid, room_ids, persistent, content)
 
@@ -662,10 +670,24 @@ func SendRoomMessage(w http.ResponseWriter, req *http.Request) {
 		route := app_route.FindOrAddRoute(appid)
 		clients := route.FindRoomClientSet(room_id)
 		for c, _ := range(clients) {
-			c.wt <- msg
+			if version_gte > 0 && c.version < version_gte {
+				continue
+			}
+			if version_lte > 0 && c.version > version_lte {
+				continue
+			}
+			if version > 0 && c.version != version {
+				continue
+			}
+			if platform > 0 && c.platform_id != int8(platform) {
+				continue
+			}
+			
+			c.EnqueueNonBlockMessage(msg)
 		}
 
-		amsg := &AppMessage{appid:appid, receiver:room_id, msg:msg}
+		amsg := &AppMessage{appid:appid, receiver:room_id, version_gte:int8(version_gte),
+			version_lte:int8(version_lte), version:int8(version), platform:int8(platform), msg:msg}
 		channel := GetRoomChannel(room_id)
 		channel.PublishRoom(amsg)
 	}

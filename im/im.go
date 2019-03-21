@@ -334,7 +334,27 @@ func DispatchRoomMessage(amsg *AppMessage) {
 		log.Infof("can't dispatch room message, appid:%d room id:%d cmd:%s", amsg.appid, amsg.receiver, Command(amsg.msg.cmd))
 		return
 	}
+
+	version_gte := int(amsg.version_gte)
+	version_lte := int(amsg.version_lte)
+	version := int(amsg.version)
+	platform := amsg.platform
 	for c, _ := range(clients) {
+
+		if version_gte > 0 && c.version < version_gte {
+			continue
+		}
+		if version_lte > 0 && c.version > version_lte {
+			continue
+		}
+		if version > 0 && c.version != version {
+			continue
+		}
+		if platform > 0 && c.platform_id != int8(platform) {
+			continue
+		}
+
+		
 		c.EnqueueNonBlockMessage(amsg.msg)
 	}	
 }
