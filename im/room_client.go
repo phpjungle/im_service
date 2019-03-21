@@ -153,6 +153,14 @@ func (client *RoomClient) HandleRoomIM(msg *Message) {
 				return
 			}
 		}
+		elem = obj.Get("user_action")
+		if elem != nil {
+			action, err := obj.Get("user_action").Int64()
+			if err == nil && action == 1003 {
+				log.Warningf("invalid room message, room id:%d sender:%d content:%s", room_id, room_im.sender, room_im.content)
+				return
+			}
+		}
 	}
 	
 	if (msg.flag & MESSAGE_FLAG_UNPERSISTENT) == 0 {
