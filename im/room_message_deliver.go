@@ -57,12 +57,18 @@ func NewRoomMessageDeliver() *RoomMessageDeliver {
 func (usd *RoomMessageDeliver) PublishEvent(appid int64, uid int64, room_id int64, session_id string, event int) bool {
 	now := int(time.Now().Unix())
 	e := &RoomEvent{appid, uid, room_id, session_id, event, now}
-
+	
+	begin := time.Now()
 	select {
 	case usd.event_chan <- e:
+		end := time.Now()
+		duration := end.Sub(begin)
+		if duration > time.Millisecond*500 {
+			log.Infof("publish room event slow:%d, %d, %d", appid, uid)
+		}
 		return true
 	case <- time.After(60*time.Second):
-		log.Infof("publish room event  timed out:%d, %d", appid, uid)
+		log.Infof("publish room event timed out:%d, %d", appid, uid)
 		return false
 	}
 }
@@ -70,8 +76,16 @@ func (usd *RoomMessageDeliver) PublishEvent(appid int64, uid int64, room_id int6
 func (usd *RoomMessageDeliver) SaveRoomMessage(appid int64, msg *RoomMessage) bool {
 	now := int(time.Now().Unix())	
 	m := &AppRoomMessage{appid, now, msg}
+
+	begin := time.Now()
+	
 	select {
 	case usd.wt <- m:
+		end := time.Now()
+		duration := end.Sub(begin)
+		if duration > time.Millisecond*500 {
+			log.Infof("save room message to wt slow:%d, %d, %d", appid, msg.sender, msg.receiver)
+		}
 		return true
 	case <- time.After(60*time.Second):
 		log.Infof("save room message to wt timed out:%d, %d, %d", appid, msg.sender, msg.receiver)

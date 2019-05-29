@@ -398,9 +398,15 @@ type loggingHandler struct {
 	handler http.Handler
 }
 
+
 func (h loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Infof("http request:%s %s %s", r.RemoteAddr, r.Method, r.URL)
+	begin := time.Now()		
+
 	h.handler.ServeHTTP(w, r)
+	end := time.Now()
+	duration := end.Sub(begin)
+	d := duration.Nanoseconds()
+	log.Infof("http request:%s %s %s %v", r.RemoteAddr, r.Method, r.URL, d)
 }
 
 func StartHttpServer(addr string) {
