@@ -405,8 +405,8 @@ func (h loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.handler.ServeHTTP(w, r)
 	end := time.Now()
 	duration := end.Sub(begin)
-	d := duration.Nanoseconds()
-	log.Infof("http request:%s %s %s %v", r.RemoteAddr, r.Method, r.URL, d)
+
+	log.Infof("http request:%s %s %s %s", r.RemoteAddr, r.Method, r.URL, duration)
 }
 
 func StartHttpServer(addr string) {
