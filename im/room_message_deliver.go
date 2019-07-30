@@ -163,7 +163,7 @@ func (usd *RoomMessageDeliver) deliver(messages []*AppRoomMessage) {
 		rooms[queue_name] = struct{}{}
 	}
 
-	if len(rooms) == 0 {
+	if len(rooms) == 0 && len(messages) == 0 {
 		return
 	}
 	
