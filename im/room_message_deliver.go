@@ -171,6 +171,12 @@ func (usd *RoomMessageDeliver) deliver(messages []*AppRoomMessage) {
 	for queue_name, _ := range rooms {
 		conn.Send("LTRIM", queue_name, 0, config.room_message_limit - 1)
 	}
+	for _, msg := range(messages) {
+		content := fmt.Sprintf("%d\n%d\n%d\n%s", msg.sender, msg.receiver,
+			msg.timestamp, msg.content)
+		queue_name := "room_messages"
+		conn.Send("LPUSH", queue_name, content)
+	}
 	_, err = conn.Do("EXEC")
 	if err != nil {
 		log.Warning("ltrim room list err:", err)
