@@ -15,3 +15,5 @@ benchmark_storage
 benchmark_route
 *.log
 *.pyc
+vendor
+ims/ims_truncate
