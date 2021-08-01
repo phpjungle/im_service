@@ -1,0 +1,1 @@
+kill $(ps aux | grep '[i]m_service/bin/' | awk '{print $2}')
