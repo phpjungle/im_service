@@ -2,7 +2,6 @@
 *~
 .idea
 bin
-*.cfg
 im/im
 ims/ims
 imr/imr

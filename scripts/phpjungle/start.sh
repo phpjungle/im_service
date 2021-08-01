@@ -1,6 +1,6 @@
-BASEDIR=/Users/phpjungle/go/src/github.com/GoBelieveIO/im_service
+BASEDIR=$HOME/go/src/github.com/GoBelieveIO/im_service
 CFGPATH=$BASEDIR/scripts/phpjungle/
-IMPATH=/Users/phpjungle/im
+IMPATH=$HOME/im
 
 nohup $BASEDIR/bin/ims -log_dir=$IMPATH/logs/ims $CFGPATH/ims.cfg >$IMPATH/logs/ims/ims.log 2>&1 &
 
